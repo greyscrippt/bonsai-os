@@ -34,9 +34,17 @@ typedef unsigned char*  string;
 uint8_t cursor_x = 0;
 uint8_t cursor_y = 0;
 
+uint16_t get_cursor_offset() {
+  return (cursor_x * VGA_ROWS) + cursor_y;
+}
 
 
-// Copy data of size count from address src to address dest.
+// +-------------------------------------------------------------------------+
+// | Copies 1 byte of memory of size count from address src to address dest. |
+// +-------------------------------------------------------------------------+
+// @params dest   Destination address.
+// @params src    Source address.
+// @params count  Number of bytes to copy.
 uint8_t *mem_cpy(uint8_t* dest, const uint8_t* src, int count) {
   int i;
   for(i=0 ; i<count ; i++)
