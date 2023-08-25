@@ -31,8 +31,13 @@ typedef unsigned long   long uint64_t;
 
 typedef unsigned char*  string;
 
+uint8_t cursor_x = 0;
+uint8_t cursor_y = 0;
+
+
+
 // Copy data of size count from address src to address dest.
-unsigned char *mem_cpy(unsigned char* dest, const unsigned char* src, int count) {
+uint8_t *mem_cpy(uint8_t* dest, const uint8_t* src, int count) {
   int i;
   for(i=0 ; i<count ; i++)
     dest[i] = src[i];
@@ -40,7 +45,7 @@ unsigned char *mem_cpy(unsigned char* dest, const unsigned char* src, int count)
 }
 
 // Sets the values of address 'dest' into 'val' for 'count' times
-unsigned char* mem_set(unsigned char* dest, unsigned char val, int count) {
+uint8_t* mem_set(uint8_t* dest, uint8_t val, int count) {
   int i;
   for(i=0 ; i<count ; i++)
     dest[i] = val;
@@ -61,9 +66,9 @@ void outbyte(uint16_t port, uint8_t data) {
 
 // Sets a character on 'offset'.
 void set_ch(char ch, int offset, uint8_t bg_color, uint8_t txt_color) {
-  unsigned char* vidmem   = (unsigned char*) VGA_ADDR;
-  vidmem[offset]          = ch;
-  vidmem[offset + 1]      = (uint16_t) bg_color | txt_color;
+  uint8_t* vidmem     = (uint8_t*) VGA_ADDR;
+  vidmem[offset]      = ch;
+  vidmem[offset + 1]  = (uint16_t) bg_color | txt_color;
 }
 
 void main(void) {
