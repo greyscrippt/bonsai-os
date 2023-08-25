@@ -31,13 +31,14 @@ typedef unsigned long   long uint64_t;
 
 typedef unsigned char*  string;
 
-uint8_t cursor_x = 0;
-uint8_t cursor_y = 0;
+uint8_t  cursor_x = 0;
+uint8_t  cursor_y = 0;
+uint8_t  bg_color = VGA_BLACK;
+uint8_t  txt_colr = VGA_GREEN;
 
 uint16_t get_cursor_offset() {
-  return (cursor_x * VGA_ROWS) + cursor_y;
+  return (cursor_x * VGA_COLS) + cursor_y;
 }
-
 
 // +-------------------------------------------------------------------------+
 // | Copies 1 byte of memory of size count from address src to address dest. |
@@ -73,10 +74,24 @@ void outbyte(uint16_t port, uint8_t data) {
 }
 
 // Sets a character on 'offset'.
-void set_ch(char ch, int offset, uint8_t bg_color, uint8_t txt_color) {
+void set_ch_at_offset(char ch, uint8_t offset) {
   uint8_t* vidmem     = (uint8_t*) VGA_ADDR;
   vidmem[offset]      = ch;
-  vidmem[offset + 1]  = (uint16_t) bg_color | txt_color;
+  vidmem[offset + 1]  = (uint16_t) bg_color | txt_colr;
+}
+
+void print_ch(char ch, uint8_t x, uint8_t y) {
+  uint8_t offset = (x * VGA_COLS) + y * 2;
+  x++;
+  set_ch_at_offset(ch, offset);
+}
+
+void set_bg_color(uint8_t color) {
+  bg_color = color;
+}
+
+void set_txt_colr(uint8_t color) {
+  txt_colr = color;
 }
 
 void main(void) {
