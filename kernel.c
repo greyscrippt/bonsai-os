@@ -1,6 +1,12 @@
-#define VGA_ADDR            0xb8000
-#define VGA_ROWS            0x19
-#define VGA_COLS            0x50
+#define VGA_CTRL_REGISTER   0x3D4
+#define VGA_DATA_REGISTER   0x3D5
+#define VGA_OFFSET_LOW      0x0F
+#define VGA_OFFSET_HIGH     0x0E
+
+#define VGA_ADDR            0xB8000
+#define VGA_TEXT_MODE_ADDR  0xA000
+#define VGA_ROWS            25
+#define VGA_COLS            80
 
 #define VGA_BLACK           0x0
 #define VGA_BLUE            0x1
@@ -36,8 +42,14 @@ uint8_t  cursor_y = 0;
 uint8_t  bg_color = VGA_BLACK;
 uint8_t  txt_colr = VGA_GREEN;
 
-uint16_t get_cursor_offset() {
-  return (cursor_x * VGA_COLS) + cursor_y;
+unsigned char port_byte_in(unsigned short port) {
+  unsigned char result;
+  __asm__("in %%dx, %%al" : "=a" (result) : "d" (port));
+  return result;
+}
+
+void port_byte_out(unsigned short port, unsigned char data) {
+  __asm__("out %%al, %%dx" : : "a" (data), "d" (port));
 }
 
 // +-------------------------------------------------------------------------+
@@ -73,19 +85,6 @@ void outbyte(uint16_t port, uint8_t data) {
   __asm__ __volatile__ ("outb %1, %0" : : "d" (port), "a" (data));
 }
 
-// Sets a character on 'offset'.
-void set_ch_at_offset(char ch, uint8_t offset) {
-  uint8_t* vidmem     = (uint8_t*) VGA_ADDR;
-  vidmem[offset]      = ch;
-  vidmem[offset + 1]  = (uint16_t) bg_color | txt_colr;
-}
-
-void print_ch(char ch, uint8_t x, uint8_t y) {
-  uint8_t offset = (x * VGA_COLS) + y * 2;
-  x++;
-  set_ch_at_offset(ch, offset);
-}
-
 void set_bg_color(uint8_t color) {
   bg_color = color;
 }
@@ -94,6 +93,87 @@ void set_txt_colr(uint8_t color) {
   txt_colr = color;
 }
 
+int str_len(char* str) {
+  int i;
+  for(i=0 ; str[i] != '\0' ; i++);
+  return i;
+}
+
+void enable_cursor(uint8_t cursor_start, uint8_t cursor_end)
+{
+	outbyte(0x3D4, 0x0A);
+	outbyte(0x3D5, (inbyte(0x3D5) & 0xC0) | cursor_start);
+ 
+	outbyte(0x3D4, 0x0B);
+	outbyte(0x3D5, (inbyte(0x3D5) & 0xE0) | cursor_end);
+}
+
+void disable_cursor()
+{
+	outbyte(0x3D4, 0x0A);
+	outbyte(0x3D5, 0x20);
+}
+
+void update_cursor(int x, int y)
+{
+	uint16_t pos = y * VGA_COLS + x;
+ 
+	outbyte(0x3D4, 0x0F);
+	outbyte(0x3D5, (uint8_t) (pos & 0xFF));
+	outbyte(0x3D4, 0x0E);
+	outbyte(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+}
+
+uint16_t get_cursor_position(void)
+{
+    uint16_t pos = 0;
+    outbyte(0x3D4, 0x0F);
+    pos |= inbyte(0x3D5);
+    outbyte(0x3D4, 0x0E);
+    pos |= ((uint16_t)inbyte(0x3D5)) << 8;
+    return pos;
+}
+
+void setchar(unsigned char c, unsigned char forecolour, unsigned char backcolour, int x, int y)
+{
+     uint16_t attrib = (backcolour << 4) | (forecolour & 0x0F);
+     volatile uint16_t * offset;
+     offset = (volatile uint16_t *)VGA_ADDR + (y * 80 + x) ;
+     *offset = c | (attrib << 8);
+}
+
+void print(char* str) {
+  for(int i=0 ; i<=str_len(str) ; i++) {
+    setchar(str[i], txt_colr, bg_color, cursor_x, cursor_y);
+
+    cursor_x++;
+
+    if(cursor_x > VGA_COLS) {
+      cursor_x = 0;
+      cursor_y++;
+    }
+
+    if(cursor_y == VGA_ROWS) {
+      cursor_y = 0;
+      cursor_x = 0;
+    }
+  }
+}
+
+void println(char* str) {
+  print(str);
+  
+  cursor_y++;
+  cursor_x = 0;
+  
+  if(cursor_y == VGA_ROWS)
+    cursor_y = 0;
+}
+
 void main(void) {
-  while(1);
+  disable_cursor();
+  
+  while(1) {
+    println("Hello");
+  }
 }
